@@ -1,0 +1,60 @@
+<html>
+
+<head>
+    <title>Crawler Explitus</title>
+    <script type="text/javascript" src="https://cdn.firebase.com/js/client/2.2.3/firebase.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript">
+
+    var rootRef = new Firebase('https://bcorp-data.firebaseio.com/');
+    var companies = rootRef.child('companies');
+    var lastPage = rootRef.child('lastPage');
+    var featchData = function() {
+      lastPage.once('value', function (snap) {
+        var page = 0;
+        if(snap.val()) {
+          page = parseInt(snap.val(), 10);
+          page++;
+        }
+        else {
+          page = 0;
+        }
+
+        var getJSONData = function () {
+          console.log("Fetching page " + page);
+          $.getJSON('dcorp.php?page=' + page, function(result) {
+            for(var i = 0;i < result.length;i++) {
+              console.log('Saving '+ result[i].id +' to firebase...');
+              processObject(result[i]);
+              if(i === result.length - 1) {
+                page++;
+                lastPage.set(page, getJSONData);
+              }
+            }
+          });
+        };
+        getJSONData();
+
+      });
+
+    };
+
+    var processObject = function(data) {
+      var id = data.id;
+      delete data.id;
+      companies.child(id).set(data, function (err) {
+        if(err) {
+          console.log('Error saving '+ id, err);
+        }
+        else {
+          console.log('Saved '+ id);
+        }
+
+      });
+    };
+
+    featchData();
+    </script>
+</head>
+
+</html>
